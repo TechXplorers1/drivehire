@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white text-gray-900 font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-medium tracking-tight;
+  }
+}
+
+/* Custom utilities for premium feel */
+.hero-gradient {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+.input-field {
+  @apply block w-full px-4 py-3 bg-gray-50 border-0 border-b-2 border-gray-200 focus:ring-0 focus:border-black transition-colors duration-200;
+}

@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Common helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isUser(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isDriver() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'driver';
+    }
+
+    // Users: Users can read/write their own profile
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated(); // Allow initial creation
+      allow update: if isUser(userId) || isAdmin();
+    }
+    
+    // Drivers: Public read, Admin write
+    match /drivers/{driverId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Vehicles: Public read, Admin write
+    match /vehicles/{vehicleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Bookings: Users read own, Drivers read assigned
+    match /bookings/{bookingId} {
+      allow create: if isAuthenticated();
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.driverId == request.auth.uid ||
+        isAdmin()
+      );
+      allow update: if isAdmin(); // Only admin or server updates status for now
+    }
+    
+    // Lessons: Public read
+    match /lessons/{lessonId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
