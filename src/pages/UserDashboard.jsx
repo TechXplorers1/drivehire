@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserBookings } from '../lib/db';
 import DashboardLayout from '../layouts/DashboardLayout';
-import { Calendar, Clock, MapPin, Tag, Car, Settings } from 'lucide-react';
+import { Calendar, Clock, MapPin, Tag, Car, Settings, User } from 'lucide-react';
 
 export default function UserDashboard() {
     const { user } = useAuth();
@@ -12,6 +12,20 @@ export default function UserDashboard() {
     const [searchParams] = useSearchParams();
     // Default to 'rides'
     const tab = searchParams.get('tab') || 'rides';
+
+    const [profileData, setProfileData] = useState({
+        fullName: '',
+        phone: ''
+    });
+
+    useEffect(() => {
+        if (user) {
+            setProfileData({
+                fullName: user.fullName || '',
+                phone: user.phone || ''
+            });
+        }
+    }, [user]);
 
     useEffect(() => {
         async function load() {
@@ -29,6 +43,7 @@ export default function UserDashboard() {
             <div className="max-w-5xl mx-auto">
                 <h1 className="text-3xl font-light text-gray-900 mb-8 capitalize tracking-tight">
                     {tab === 'rides' && 'Your Rides'}
+                    {tab === 'lessons' && 'Driving Lessons'}
                     {tab === 'account' && 'Account Settings'}
                     {tab === 'promotions' && 'Promotions'}
                 </h1>
@@ -107,11 +122,23 @@ export default function UserDashboard() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Full Name</label>
-                                    <input type="text" className="w-full border-b border-gray-200 py-2 text-gray-900 focus:border-black focus:outline-none transition-colors placeholder-gray-300" placeholder="John Doe" />
+                                    <input
+                                        type="text"
+                                        className="w-full border-b border-gray-200 py-2 text-gray-900 focus:border-black focus:outline-none transition-colors placeholder-gray-300"
+                                        placeholder="John Doe"
+                                        value={profileData.fullName}
+                                        onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Phone Number</label>
-                                    <input type="tel" className="w-full border-b border-gray-200 py-2 text-gray-900 focus:border-black focus:outline-none transition-colors placeholder-gray-300" placeholder="+1 (555) 000-0000" />
+                                    <input
+                                        type="tel"
+                                        className="w-full border-b border-gray-200 py-2 text-gray-900 focus:border-black focus:outline-none transition-colors placeholder-gray-300"
+                                        placeholder="+1 (555) 000-0000"
+                                        value={profileData.phone}
+                                        onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                                    />
                                 </div>
                             </div>
 
@@ -156,6 +183,69 @@ export default function UserDashboard() {
                         <button className="text-xs font-bold uppercase tracking-widest border-b border-black pb-1 hover:text-gray-600 hover:border-gray-600 transition-colors">
                             View Terms & Conditions
                         </button>
+                    </div>
+                )}
+
+                {tab === 'lessons' && (
+                    <div className="space-y-6">
+                        {/* Mock Lesson Data for Visual Verification */}
+                        {[
+                            {
+                                id: 'l1',
+                                package: "Beginner's License",
+                                hoursCompleted: 4,
+                                totalHours: 20,
+                                instructor: "Sarah Jenkins",
+                                nextLesson: "Dec 22, 2024 • 10:00 AM",
+                                status: "In Progress"
+                            },
+                            {
+                                id: 'l2',
+                                package: "Defensive Driving",
+                                hoursCompleted: 10,
+                                totalHours: 10,
+                                instructor: "David Chen",
+                                nextLesson: "-",
+                                status: "Completed"
+                            }
+                        ].map((lesson) => (
+                            <div key={lesson.id} className="bg-white rounded-none border-l-4 border-orange-500 shadow-sm p-6 hover:shadow-lg transition-all duration-300">
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-4 mb-3">
+                                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase ${lesson.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                                {lesson.status}
+                                            </span>
+                                            <span className="text-sm text-gray-500 font-medium flex items-center">
+                                                <User className="w-4 h-4 mr-2" />
+                                                Instr. {lesson.instructor}
+                                            </span>
+                                        </div>
+                                        <h3 className="text-xl font-serif font-medium text-gray-900 mb-2">
+                                            {lesson.package}
+                                        </h3>
+                                        <div className="flex items-center text-sm text-gray-500 gap-6">
+                                            <span>Progress: {lesson.hoursCompleted} / {lesson.totalHours} Hrs</span>
+                                            {lesson.nextLesson !== '-' && (
+                                                <span className="font-semibold text-black">Next: {lesson.nextLesson}</span>
+                                            )}
+                                        </div>
+                                        {/* Progress Bar */}
+                                        <div className="mt-4 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden max-w-md">
+                                            <div
+                                                className="h-full bg-orange-500 transition-all duration-500"
+                                                style={{ width: `${(lesson.hoursCompleted / lesson.totalHours) * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4 self-end md:self-center">
+                                        <button className="px-6 py-3 text-xs font-bold tracking-widest uppercase border border-gray-200 hover:border-black hover:bg-black hover:text-white transition-all duration-300">
+                                            View Schedule
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

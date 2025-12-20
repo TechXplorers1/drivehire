@@ -18,6 +18,7 @@ import DriverDashboard from './pages/DriverDashboard';
 
 // Placeholders for other pages
 import DrivingSchool from './pages/DrivingSchool';
+import SchoolBookingWizard from './pages/SchoolBookingWizard';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route path="/fleet" element={<Fleet />} />
             <Route path="/business" element={<Business />} />
             <Route path="/school" element={<DrivingSchool />} />
+            <Route path="/school/book" element={<SchoolBookingWizard />} />
 
             <Route
               path="/book"

@@ -46,56 +46,72 @@ export default function SearchResults() {
             </div>
 
             {loading ? (
-                <div className="text-center py-12">Loading...</div>
+                <div className="flex justify-center items-center py-24">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                </div>
             ) : (
-                <div className="grid gap-6 lg:grid-cols-3 md:grid-cols-2 grid-cols-1">
+                <div className="grid gap-8 lg:grid-cols-3 md:grid-cols-2 grid-cols-1">
                     {drivers.map((driver) => (
-                        <div key={driver.id} className="bg-white overflow-hidden shadow rounded-lg border border-gray-100 flex flex-col">
-                            <div className="h-48 w-full bg-gray-200 relative">
-                                <img src={driver.imageUrl} alt={driver.fullName} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="px-4 py-5 flex-1">
-                                <div className="flex justify-between items-start">
-                                    <h3 className="text-lg leading-6 font-medium text-gray-900">{driver.fullName}</h3>
-                                    <div className="flex items-center bg-yellow-100 px-2 py-1 rounded text-xs font-bold text-yellow-800">
-                                        <Star className="w-3 h-3 mr-1 fill-current" />
-                                        {driver.rating}
-                                    </div>
+                        <div key={driver.id} className="bg-white group overflow-hidden shadow-sm hover:shadow-xl rounded-2xl border border-gray-100 transition-all duration-300 flex flex-col">
+                            <div className="h-56 w-full bg-gray-200 relative overflow-hidden">
+                                <img
+                                    src={driver.imageUrl}
+                                    alt={driver.fullName}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                />
+                                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold text-gray-900 shadow-sm flex items-center gap-1">
+                                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
+                                    {driver.rating}
                                 </div>
-                                <div className="mt-2 flex items-center text-sm text-gray-500">
+                            </div>
+                            <div className="px-6 py-6 flex-1 flex flex-col">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="text-xl font-bold text-gray-900">{driver.fullName}</h3>
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                        ${driver.hourlyRate}/hr
+                                    </span>
+                                </div>
+                                <div className="flex items-center text-sm text-gray-500 mb-4">
                                     <MapPin className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
                                     {driver.city}
                                 </div>
-                                <p className="mt-4 text-sm text-gray-500 line-clamp-3">
+                                <p className="text-sm text-gray-500 line-clamp-2 mb-6 flex-1">
                                     {driver.bio}
                                 </p>
-                                <div className="mt-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                                        ${driver.hourlyRate}/hr
-                                    </span>
-                                    <div className="mt-2 flex gap-2 flex-wrap">
-                                        {driver.vehicleTypes?.map(v => (
-                                            <span key={v} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 capitalize">
+                                <div className="space-y-4 mt-auto">
+                                    <div className="flex gap-2 flex-wrap">
+                                        {driver.vehicleTypes?.slice(0, 3).map(v => (
+                                            <span key={v} className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600 capitalize">
                                                 {v}
                                             </span>
                                         ))}
                                     </div>
+                                    <Link
+                                        to={`/book?driverId=${driver.id}`}
+                                        className="block w-full text-center px-4 py-3 border border-transparent text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all duration-200"
+                                    >
+                                        Book Driver
+                                    </Link>
                                 </div>
-                            </div>
-                            <div className="px-4 py-4 bg-gray-50 text-right">
-                                <Link
-                                    to={`/book?driverId=${driver.id}`}
-                                    className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                                >
-                                    Book Now &rarr;
-                                </Link>
                             </div>
                         </div>
                     ))}
 
                     {drivers.length === 0 && (
-                        <div className="col-span-full text-center py-12 text-gray-500">
-                            No drivers found. Try running the seeder or changing filters.
+                        <div className="col-span-full flex flex-col items-center justify-center py-24 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-300">
+                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                                <MapPin className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <h3 className="text-lg font-medium text-gray-900">No drivers found</h3>
+                            <p className="mt-2 text-sm text-gray-500 max-w-sm">
+                                We couldn't find any drivers matching your criteria. Try adjusting your filters or search for a different city.
+                            </p>
+                            <button
+                                onClick={() => setCityFilter('')}
+                                className="mt-6 text-sm font-medium text-indigo-600 hover:text-indigo-500 hover:underline"
+                            >
+                                Clear all filters
+                            </button>
                         </div>
                     )}
                 </div>
