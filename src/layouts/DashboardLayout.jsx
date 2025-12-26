@@ -13,7 +13,9 @@ import {
     Users,
     DollarSign,
     Shield,
-    Tag
+    Tag,
+    MapPin,
+    Clock
 } from 'lucide-react';
 
 export default function DashboardLayout({ children, role }) {
@@ -32,9 +34,11 @@ export default function DashboardLayout({ children, role }) {
                 ];
             case 'driver':
                 return [
-                    { name: 'Assignments', icon: Calendar, path: '/driver' },
-                    { name: 'My Profile', icon: User, path: '/driver?tab=profile' },
+                    { name: 'Requests', icon: MapPin, path: '/driver' },
+                    { name: 'Schedule', icon: Calendar, path: '/driver?tab=upcoming' },
+                    { name: 'History', icon: Clock, path: '/driver?tab=history' },
                     { name: 'Earnings', icon: DollarSign, path: '/driver?tab=earnings' },
+                    { name: 'My Profile', icon: User, path: '/driver?tab=profile' },
                 ];
             default: // user
                 return [

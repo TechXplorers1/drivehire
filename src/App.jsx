@@ -18,7 +18,10 @@ import DriverDashboard from './pages/DriverDashboard';
 
 // Placeholders for other pages
 import DrivingSchool from './pages/DrivingSchool';
+import InstructorProfile from './pages/InstructorProfile';
+import CourseDetails from './pages/CourseDetails';
 import SchoolBookingWizard from './pages/SchoolBookingWizard';
+import AvailableDrivers from './pages/AvailableDrivers';
 
 function App() {
   return (
@@ -30,6 +33,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/search" element={<SearchResults />} />
+            <Route path="/available-drivers" element={<AvailableDrivers />} />
             <Route path="/services" element={<Services />} />
             <Route path="/services/city-to-city" element={<ServiceDetail type="city-to-city" />} />
             <Route path="/services/hourly" element={<ServiceDetail type="hourly" />} />
@@ -37,6 +41,8 @@ function App() {
             <Route path="/fleet" element={<Fleet />} />
             <Route path="/business" element={<Business />} />
             <Route path="/school" element={<DrivingSchool />} />
+            <Route path="/school/instructor/:id" element={<InstructorProfile />} />
+            <Route path="/school/course/:id" element={<CourseDetails />} />
             <Route path="/school/book" element={<SchoolBookingWizard />} />
 
             <Route

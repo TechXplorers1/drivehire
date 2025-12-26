@@ -92,13 +92,28 @@ export const AuthProvider = ({ children }) => {
     const register = async (email, password, role = 'customer', additionalData = {}) => {
         const res = await createUserWithEmailAndPassword(auth, email, password);
         const uid = res.user.uid;
-        // Create user document
-        await setDoc(doc(db, "users", uid), {
+
+        const userData = {
             email,
             role,
             createdAt: new Date(),
             ...additionalData
+        };
+
+        // Create user document
+        await setDoc(doc(db, "users", uid), userData);
+
+        // IMMEDIATE LOCAL UPDATE: Solve race condition where onAuthStateChanged runs before setDoc
+        // We manually update the user state so the app has the correct role and data immediately
+        setUser({
+            uid: uid,
+            email: res.user.email,
+            displayName: additionalData.fullName || res.user.displayName,
+            photoURL: res.user.photoURL,
+            ...userData
         });
+        setUserRole(role);
+
         return res;
     };
 

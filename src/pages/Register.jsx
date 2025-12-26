@@ -1,17 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function Register() {
-    const { register: signup, loginWithGoogle } = useAuth();
+    const { register: signup, loginWithGoogle, user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const { register, handleSubmit, watch, formState: { errors } } = useForm();
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    useEffect(() => {
+        if (!authLoading && user) {
+            navigate('/');
+        }
+    }, [user, authLoading, navigate]);
 
     const onSubmit = async (data) => {
         if (data.password !== data.confirmPassword) {
@@ -23,9 +29,26 @@ export default function Register() {
             setLoading(true);
             await signup(data.email, data.password, data.role, {
                 fullName: data.fullName,
-                phone: data.phone
+                phone: data.phone,
+                ...(data.role === 'driver' && {
+                    city: data.city,
+                    carMake: data.carMake,
+                    carModel: data.carModel,
+                    carYear: data.carYear,
+                    plateNumber: data.plateNumber,
+                    licenseNumber: data.licenseNumber,
+                    vehicleType: 'Standard' // Default, could be a dropdown later
+                })
             });
-            navigate('/');
+            console.log('Signup successful, navigating based on role...');
+
+            if (data.role === 'driver') {
+                navigate('/driver');
+            } else if (data.role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate('/'); // Customers usually start at home to book services
+            }
         } catch (err) {
             setError('Failed to create account: ' + err.message);
         } finally {
@@ -158,6 +181,79 @@ export default function Register() {
                         </div>
                         {errors.confirmPassword && <span className="text-red-500 text-xs">{errors.confirmPassword.message}</span>}
                     </div>
+
+                    {watch('role') === 'driver' && (
+                        <div className="space-y-4 border-t pt-4 mt-4">
+                            <h3 className="text-lg font-medium text-gray-900">Vehicle & Driver Information</h3>
+
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Vehicle Make</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Toyota"
+                                        {...register("carMake", { required: watch('role') === 'driver' })}
+                                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    />
+                                    {errors.carMake && <span className="text-red-500 text-xs">Vehicle Make is required</span>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Vehicle Model</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Camry"
+                                        {...register("carModel", { required: watch('role') === 'driver' })}
+                                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    />
+                                    {errors.carModel && <span className="text-red-500 text-xs">Vehicle Model is required</span>}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">City (Service Area)</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. New York"
+                                    {...register("city", { required: watch('role') === 'driver' })}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                />
+                                {errors.city && <span className="text-red-500 text-xs">City is required</span>}
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Vehicle Year</label>
+                                    <input
+                                        type="number"
+                                        placeholder="e.g. 2020"
+                                        {...register("carYear", { required: watch('role') === 'driver' })}
+                                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    />
+                                    {errors.carYear && <span className="text-red-500 text-xs">Vehicle Year is required</span>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Plate Number</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. ABC-1234"
+                                        {...register("plateNumber", { required: watch('role') === 'driver' })}
+                                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    />
+                                    {errors.plateNumber && <span className="text-red-500 text-xs">Plate Number is required</span>}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Driver License Number</label>
+                                <input
+                                    type="text"
+                                    {...register("licenseNumber", { required: watch('role') === 'driver' })}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                />
+                                {errors.licenseNumber && <span className="text-red-500 text-xs">License Number is required</span>}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="pt-4">
                         <button

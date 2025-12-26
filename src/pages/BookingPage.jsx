@@ -8,6 +8,7 @@ import { format, addHours } from 'date-fns';
 export default function BookingPage() {
     const [searchParams] = useSearchParams();
     const driverId = searchParams.get('driverId');
+    const serviceType = searchParams.get('serviceType') || 'chauffeur'; // Default
     const [driver, setDriver] = useState(null);
     const [loading, setLoading] = useState(true);
     const [step, setStep] = useState(1);
@@ -23,9 +24,50 @@ export default function BookingPage() {
     useEffect(() => {
         if (!driverId) return;
         async function load() {
-            const d = await getDriverById(driverId);
-            setDriver(d);
-            setLoading(false);
+            // Mock Data Fallback for demonstration
+            const MOCK_DRIVERS = [
+                {
+                    id: 'd1',
+                    fullName: 'James Wilson',
+                    hourlyRate: 85,
+                },
+                {
+                    id: 'd2',
+                    fullName: 'Sarah Jenkins',
+                    hourlyRate: 75,
+                },
+                {
+                    id: 'd3',
+                    fullName: 'Michael Chen',
+                    hourlyRate: 95,
+                },
+                {
+                    id: 'd4',
+                    fullName: 'Robert Fox',
+                    hourlyRate: 90,
+                }
+            ];
+
+            const mockDriver = MOCK_DRIVERS.find(d => d.id === driverId);
+            if (mockDriver) {
+                setDriver(mockDriver);
+                setLoading(false);
+                return;
+            }
+
+            // Real DB Fetch
+            try {
+                const d = await getDriverById(driverId);
+                if (d) {
+                    setDriver(d);
+                } else {
+                    console.error("Driver not found in DB");
+                }
+            } catch (err) {
+                console.error("Error fetching driver:", err);
+            } finally {
+                setLoading(false);
+            }
         }
         load();
     }, [driverId]);
@@ -38,7 +80,7 @@ export default function BookingPage() {
                 userEmail: user.email,
                 driverId: driver.id,
                 driverName: driver.fullName,
-                serviceType: 'chauffeur',
+                serviceType: serviceType,
                 date: data.date,
                 time: data.time,
                 duration: Number(data.duration),
@@ -89,7 +131,7 @@ export default function BookingPage() {
                         Book {driver.fullName}
                     </h3>
                     <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                        Hourly Chauffeur Service - ${driver.hourlyRate}/hr
+                        Service: <span className="capitalize font-semibold">{serviceType.replace('-', ' ')}</span> • {serviceType === 'hourly' ? `$${driver.hourlyRate}/hr` : 'Custom Quote'}
                     </p>
                 </div>
 

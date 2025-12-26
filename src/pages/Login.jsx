@@ -1,23 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
-    const { login, loginWithGoogle } = useAuth();
+    const { login, loginWithGoogle, user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const { register, handleSubmit, formState: { errors } } = useForm();
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    useEffect(() => {
+        if (!authLoading && user) {
+            navigate('/');
+        }
+    }, [user, authLoading, navigate]);
+
     const onSubmit = async (data) => {
         try {
             setError('');
             setLoading(true);
-            await login(data.email, data.password);
-            navigate('/');
+            const res = await login(data.email, data.password);
+
+            // Check role from DB to decide navigation
+            const userDoc = await getDoc(doc(db, "users", res.user.uid));
+            if (userDoc.exists()) {
+                const role = userDoc.data().role;
+                if (role === 'driver') navigate('/driver');
+                else if (role === 'admin') navigate('/admin');
+                else navigate('/account'); // Customers go to account/dashboard
+            } else {
+                navigate('/');
+            }
         } catch (err) {
             setError('Failed to log in: ' + err.message);
         } finally {

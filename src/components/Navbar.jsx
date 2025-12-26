@@ -4,11 +4,21 @@ import { LogOut, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function Navbar() {
-    const { user, logout } = useAuth();
-    console.log("Navbar: Current user state:", user);
+    const { user, userRole, logout } = useAuth();
+    console.log("Navbar: Current user state:", user, "Role:", userRole);
     const navigate = useNavigate();
     const location = useLocation();
     const [scrolled, setScrolled] = useState(false);
+
+    // Dynamic dashboard path
+    const getDashboardPath = () => {
+        switch (userRole) {
+            case 'driver': return '/driver';
+            case 'admin': return '/admin';
+            case 'instructor': return '/instructor'; // New route for instructors
+            default: return '/account';
+        }
+    };
 
     // Check if we are on home page or service detail page
     const isTransparentPage = location.pathname === '/' || location.pathname.startsWith('/services/');
@@ -71,6 +81,7 @@ export default function Navbar() {
                                 )}
                             </div>
 
+                            <Link to="/available-drivers" className={`text-sm font-medium uppercase tracking-widest ${isFixedHome ? 'text-white hover:text-gray-200' : 'text-gray-600 hover:text-black'}`}>Chauffeurs</Link>
                             <Link to="/fleet" className={`text-sm font-medium uppercase tracking-widest ${isFixedHome ? 'text-white hover:text-gray-200' : 'text-gray-600 hover:text-black'}`}>Fleet</Link>
                             <Link to="/school" className={`text-sm font-medium uppercase tracking-widest ${isFixedHome ? 'text-white hover:text-gray-200' : 'text-gray-600 hover:text-black'}`}>Driving School</Link>
                             <Link to="/business" className={`text-sm font-medium uppercase tracking-widest ${isFixedHome ? 'text-white hover:text-gray-200' : 'text-gray-600 hover:text-black'}`}>For Business</Link>
@@ -80,7 +91,7 @@ export default function Navbar() {
                     <div className="flex items-center space-x-6">
                         {user ? (
                             <>
-                                <Link to="/account" className={isFixedHome ? 'text-white hover:text-gray-200' : 'text-gray-600 hover:text-black'}>
+                                <Link to={getDashboardPath()} className={isFixedHome ? 'text-white hover:text-gray-200' : 'text-gray-600 hover:text-black'}>
                                     <User className="w-6 h-6" />
                                 </Link>
                                 <button onClick={handleLogout} className={isFixedHome ? 'text-white hover:text-gray-200' : 'text-gray-600 hover:text-black'}>

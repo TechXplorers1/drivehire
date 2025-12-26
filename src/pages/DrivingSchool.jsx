@@ -137,11 +137,13 @@ export default function DrivingSchool() {
                                         POPULAR
                                     </div>
                                 )}
-                                <div className="h-56 bg-gray-100 relative overflow-hidden">
+                                <div className="h-56 bg-gray-100 relative overflow-hidden group-hover:opacity-90 transition-opacity cursor-pointer">
+                                    <Link to={`/school/course/${idx + 1}`} className="absolute inset-0 z-30" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10" />
                                     <img src={pkg.image} alt={pkg.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                     <div className="absolute bottom-4 left-4 z-20">
                                         <h3 className="text-2xl font-bold text-white">{pkg.title}</h3>
+                                        <span className="text-white/80 text-xs font-bold uppercase tracking-wider mt-1 block">View Details</span>
                                     </div>
                                 </div>
                                 <div className="p-8">
@@ -173,7 +175,7 @@ export default function DrivingSchool() {
                 ) : (
                     <div className="grid md:grid-cols-3 gap-8">
                         {instructors.map((inst, idx) => (
-                            <div key={idx} className="bg-white rounded-3xl border border-gray-100 p-8 hover:shadow-xl transition-shadow group text-center">
+                            <Link to={`/school/instructor/${idx + 1}`} key={idx} className="bg-white rounded-3xl border border-gray-100 p-8 hover:shadow-xl transition-shadow group text-center block">
                                 <div className="relative w-32 h-32 mx-auto mb-6">
                                     <div className="absolute inset-0 bg-orange-100 rounded-full scale-110 group-hover:scale-125 transition-transform duration-300" />
                                     <img src={inst.img} alt={inst.name} className="w-full h-full rounded-full object-cover relative z-10 border-4 border-white shadow-sm" />
@@ -185,8 +187,8 @@ export default function DrivingSchool() {
                                     <span className="text-gray-400 text-sm">({inst.reviews} reviews)</span>
                                 </div>
                                 <p className="text-gray-500 text-sm leading-relaxed mb-6 italic">"{inst.bio}"</p>
-                                <button className="text-orange-600 font-bold text-sm tracking-wide uppercase hover:text-orange-700 transition-colors">View Schedule</button>
-                            </div>
+                                <span className="text-orange-600 font-bold text-sm tracking-wide uppercase hover:text-orange-700 transition-colors">View Profile & Schedule</span>
+                            </Link>
                         ))}
                     </div>
                 )}
