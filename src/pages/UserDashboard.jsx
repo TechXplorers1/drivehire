@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getUserBookings } from '../lib/db';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { Calendar, Clock, MapPin, Tag, Car, Settings, User } from 'lucide-react';
+import LoadingScreen from '../components/LoadingScreen';
 
 export default function UserDashboard() {
     const { user } = useAuth();
@@ -51,10 +52,7 @@ export default function UserDashboard() {
                 {tab === 'rides' && (
                     <div className="space-y-6">
                         {loading ? (
-                            <div className="text-center py-12">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
-                                <span className="text-gray-500 uppercase tracking-widest text-xs">Loading rides...</span>
-                            </div>
+                            <LoadingScreen fullScreen={false} message="Loading rides..." />
                         ) : bookings.length > 0 ? (
                             bookings.map((booking) => (
                                 <div key={booking.id} className="group bg-white rounded-none border-l-4 border-black shadow-sm p-6 hover:shadow-lg transition-all duration-300">

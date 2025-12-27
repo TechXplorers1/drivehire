@@ -7,7 +7,7 @@ import { db } from '../lib/firebase';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
-    const { login, loginWithGoogle, user, loading: authLoading } = useAuth();
+    const { login, loginWithGoogle, user, userRole, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const { register, handleSubmit, formState: { errors } } = useForm();
     const [error, setError] = useState('');
@@ -15,30 +15,25 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
-        if (!authLoading && user) {
-            navigate('/');
+        // Redirect if already logged in (including after successful login)
+        // WAIT for userRole to be populated to avoid incorrect redirects (e.g. defaulting to /account)
+        if (!authLoading && user && !loading && userRole) {
+            if (userRole === 'driver') navigate('/driver');
+            else if (userRole === 'admin') navigate('/admin');
+            else if (userRole === 'instructor') navigate('/instructor');
+            else navigate('/account');
         }
-    }, [user, authLoading, navigate]);
+    }, [user, userRole, authLoading, navigate, loading]);
 
     const onSubmit = async (data) => {
         try {
             setError('');
             setLoading(true);
-            const res = await login(data.email, data.password);
-
-            // Check role from DB to decide navigation
-            const userDoc = await getDoc(doc(db, "users", res.user.uid));
-            if (userDoc.exists()) {
-                const role = userDoc.data().role;
-                if (role === 'driver') navigate('/driver');
-                else if (role === 'admin') navigate('/admin');
-                else navigate('/account'); // Customers go to account/dashboard
-            } else {
-                navigate('/');
-            }
+            await login(data.email, data.password);
+            setLoading(false); // Allow useEffect to trigger navigation
+            // Navigation is handled by useEffect when user and role are set
         } catch (err) {
             setError('Failed to log in: ' + err.message);
-        } finally {
             setLoading(false);
         }
     };
@@ -48,10 +43,10 @@ export default function Login() {
             setError('');
             setLoading(true);
             await loginWithGoogle();
-            navigate('/');
+            setLoading(false);
+            // Navigation handled by useEffect
         } catch (err) {
             setError('Failed to log in with Google: ' + err.message);
-        } finally {
             setLoading(false);
         }
     };

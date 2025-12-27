@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
@@ -6,147 +6,134 @@ import {
     signOut,
     signInWithPopup,
     setPersistence,
-    browserLocalPersistence
+    browserLocalPersistence,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "../lib/firebase";
 
 const AuthContext = createContext({});
-
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [userRole, setUserRole] = useState(null); // 'customer', 'driver', 'instructor', 'admin'
-    const [loading, setLoading] = useState(true);
+    // OPTIMISTIC INIT: Load from localStorage if available
+    const [user, setUser] = useState(() => {
+        try {
+            const saved = localStorage.getItem('drivehire_user');
+            return saved ? JSON.parse(saved) : null;
+        } catch { return null; }
+    });
+
+    const [userRole, setUserRole] = useState(() => {
+        try {
+            const saved = localStorage.getItem('drivehire_role');
+            return saved ? JSON.parse(saved) : null;
+        } catch { return 'customer'; }
+    });
+
+    // If we have a cached user, we are NOT loading (conceptually)
+    const [loading, setLoading] = useState(() => !localStorage.getItem('drivehire_user'));
+    const registeringRole = useRef(null);
+
+    // Sync state to localStorage
+    useEffect(() => {
+        if (user) localStorage.setItem('drivehire_user', JSON.stringify(user));
+        else localStorage.removeItem('drivehire_user');
+    }, [user]);
 
     useEffect(() => {
-        setPersistence(auth, browserLocalPersistence)
-            .then(() => console.log("AuthContext: Persistence set to local"))
-            .catch((error) => console.error("AuthContext: Failed to set persistence", error));
+        if (userRole) localStorage.setItem('drivehire_role', JSON.stringify(userRole));
+        else localStorage.removeItem('drivehire_role');
+    }, [userRole]);
 
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                // IMMEDIATE UPDATE: Set basic user info so UI updates instantly
-                setUser(currentUser);
+    useEffect(() => {
+        setPersistence(auth, browserLocalPersistence);
 
-                // Fetch user role/profile from Firestore
-                try {
-                    const userDocRef = doc(db, "users", currentUser.uid);
-                    const userDoc = await getDoc(userDocRef);
+        const unsub = onAuthStateChanged(auth, async (currentUser) => {
+            if (!currentUser) {
+                setUser(null);
+                setUserRole(null);
+                setLoading(false);
+                return;
+            }
 
-                    if (userDoc.exists()) {
-                        const userData = userDoc.data();
-                        console.log("AuthContext: User loaded from Firestore", userData);
-                        // Safely merge: prioritize Firestore data but ensure Auth properties exist
-                        setUser({
-                            uid: currentUser.uid,
-                            email: currentUser.email,
-                            displayName: currentUser.displayName,
-                            photoURL: currentUser.photoURL,
-                            ...userData
-                        });
-                        setUserRole(userData.role || 'customer');
-                    } else {
-                        // New user (partially initialized)
-                        // setUser(currentUser); // Already set above
-                        setUserRole(null);
-                    }
-                } catch (error) {
-                    console.error("Error fetching user profile:", error);
-                    // Fallback for offline/error state: still allow login but maybe with restricted access or default role
-                    console.log("AuthContext: Fallback user set", currentUser);
-                    // Ensure basic props are available even if fallback
+            try {
+                const snap = await getDoc(doc(db, "users", currentUser.uid));
+
+                if (snap.exists()) {
+                    const data = snap.data();
+                    console.log("AuthContext: Firestore data loaded", data);
                     setUser({
                         uid: currentUser.uid,
                         email: currentUser.email,
                         displayName: currentUser.displayName,
-                        ...currentUser
+                        ...data,
                     });
-                    setUserRole('customer'); // Default role fallback
+                    setUserRole(data.role);
+                } else {
+                    console.warn("AuthContext: User doc missing in Firestore. Existing role:", userRole);
+                    setUser(currentUser);
+                    // Use the registering role if available, or try to keep existing role if we have one cached
+                    // Only default to customer if we truly have nothing
+                    setUserRole(prev => registeringRole.current || prev || "customer");
+                    if (registeringRole.current) console.log("AuthContext: Using pending role", registeringRole.current);
                 }
-            } else {
-                console.log("AuthContext: User is null (logged out)");
-                setUser(null);
-                setUserRole(null);
+            } catch (err) {
+                console.error("AuthContext: Error fetching user doc", err);
+                setUser(currentUser);
+                // Keep existing role on error instead of forcing customer
+                setUserRole(prev => registeringRole.current || prev || "customer");
             }
+
             setLoading(false);
         });
 
-        // Safety timeout to prevent indefinite loading
-        const timer = setTimeout(() => {
-            if (loading) {
-                console.warn("Auth state change timed out, forcing app load.");
-                setLoading(false);
-            }
-        }, 5000); // 5 seconds timeout
-
-        return () => {
-            unsubscribe();
-            clearTimeout(timer);
-        };
+        return () => unsub();
     }, []);
 
-    const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
+    const login = (email, password) =>
+        signInWithEmailAndPassword(auth, email, password);
 
-    const register = async (email, password, role = 'customer', additionalData = {}) => {
+    const register = async (email, password, role, extra = {}) => {
+        registeringRole.current = role;
         const res = await createUserWithEmailAndPassword(auth, email, password);
-        const uid = res.user.uid;
-
         const userData = {
             email,
             role,
             createdAt: new Date(),
-            ...additionalData
+            ...extra,
         };
+        await setDoc(doc(db, "users", res.user.uid), userData);
 
-        // Create user document
-        await setDoc(doc(db, "users", uid), userData);
-
-        // IMMEDIATE LOCAL UPDATE: Solve race condition where onAuthStateChanged runs before setDoc
-        // We manually update the user state so the app has the correct role and data immediately
+        // Manual state update to prevent race condition with onAuthStateChanged
         setUser({
-            uid: uid,
+            uid: res.user.uid,
             email: res.user.email,
-            displayName: additionalData.fullName || res.user.displayName,
-            photoURL: res.user.photoURL,
+            displayName: extra.fullName,
             ...userData
         });
         setUserRole(role);
-
-        return res;
     };
 
-    const loginWithGoogle = async (role = 'customer') => {
+    const loginWithGoogle = async (role = "customer") => {
         const res = await signInWithPopup(auth, googleProvider);
-        // Check if user doc exists, if not create it
-        const userDocRef = doc(db, "users", res.user.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (!userDoc.exists()) {
-            await setDoc(userDocRef, {
+        const ref = doc(db, "users", res.user.uid);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+            await setDoc(ref, {
                 email: res.user.email,
                 role,
                 createdAt: new Date(),
             });
         }
-        return res;
-    }
+    };
 
     const logout = () => signOut(auth);
 
-    const value = {
-        user,
-        userRole,
-        login,
-        register,
-        loginWithGoogle,
-        logout,
-        loading
-    };
-
     return (
-        <AuthContext.Provider value={value}>
-            {loading ? <div>Loading Authentication...</div> : children}
+        <AuthContext.Provider
+            value={{ user, userRole, loading, login, register, loginWithGoogle, logout }}
+        >
+            {children}
         </AuthContext.Provider>
     );
 };

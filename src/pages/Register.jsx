@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function Register() {
-    const { register: signup, loginWithGoogle, user, loading: authLoading } = useAuth();
+    const { register: signup, loginWithGoogle, user, userRole, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const { register, handleSubmit, watch, formState: { errors } } = useForm();
     const [error, setError] = useState('');
@@ -14,10 +14,14 @@ export default function Register() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     useEffect(() => {
-        if (!authLoading && user) {
-            navigate('/');
+        // Wait for userRole to be defined before redirecting
+        if (!authLoading && user && !loading && userRole) {
+            if (userRole === 'driver') navigate('/driver');
+            else if (userRole === 'admin') navigate('/admin');
+            else if (userRole === 'instructor') navigate('/instructor');
+            else navigate('/'); // New users or customers typically go to home or onboarding
         }
-    }, [user, authLoading, navigate]);
+    }, [user, userRole, authLoading, navigate, loading]);
 
     const onSubmit = async (data) => {
         if (data.password !== data.confirmPassword) {
@@ -40,18 +44,11 @@ export default function Register() {
                     vehicleType: 'Standard' // Default, could be a dropdown later
                 })
             });
-            console.log('Signup successful, navigating based on role...');
-
-            if (data.role === 'driver') {
-                navigate('/driver');
-            } else if (data.role === 'admin') {
-                navigate('/admin');
-            } else {
-                navigate('/'); // Customers usually start at home to book services
-            }
+            console.log('Signup successful, waiting for auth state sync...');
+            // Navigation handled by useEffect
+            setLoading(false);
         } catch (err) {
             setError('Failed to create account: ' + err.message);
-        } finally {
             setLoading(false);
         }
     };
