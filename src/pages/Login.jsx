@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
@@ -15,24 +13,30 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
-        // Redirect if already logged in (including after successful login)
-        // WAIT for userRole to be populated to avoid incorrect redirects (e.g. defaulting to /account)
-        if (!authLoading && user && !loading && userRole) {
-            if (userRole === 'driver') navigate('/driver');
-            else if (userRole === 'admin') navigate('/admin');
-            else if (userRole === 'instructor') navigate('/instructor');
-            else navigate('/account');
-        }
-    }, [user, userRole, authLoading, navigate, loading]);
+        console.log("Login: Auth State Update ->", { authLoading, user, userRole });
+        if (authLoading) return;
+        if (!user) return;
+
+        // Fallback or explicit role check
+        const role = userRole || 'customer';
+        console.log("Login: Navigating to role ->", role);
+
+        if (role === "driver") navigate("/driver");
+        else if (role === "admin") navigate("/admin");
+        else if (role === "instructor") navigate("/instructor");
+        else navigate("/");
+    }, [user, userRole, authLoading, navigate]);
 
     const onSubmit = async (data) => {
+        console.log("Login: Attempting login for", data.email);
         try {
             setError('');
             setLoading(true);
             await login(data.email, data.password);
-            setLoading(false); // Allow useEffect to trigger navigation
-            // Navigation is handled by useEffect when user and role are set
+            console.log("Login: Firebase login successful");
+            // Navigation handled by useEffect
         } catch (err) {
+            console.error("Login: Failed", err);
             setError('Failed to log in: ' + err.message);
             setLoading(false);
         }
@@ -42,8 +46,7 @@ export default function Login() {
         try {
             setError('');
             setLoading(true);
-            await loginWithGoogle();
-            setLoading(false);
+            await loginWithGoogle('customer');
             // Navigation handled by useEffect
         } catch (err) {
             setError('Failed to log in with Google: ' + err.message);
@@ -69,32 +72,34 @@ export default function Login() {
 
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
                     <div className="rounded-md shadow-sm -space-y-px">
-                        <div>
-                            <label htmlFor="email-address" className="sr-only">Email address</label>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Email address</label>
                             <input
                                 id="email-address"
+                                name="email"
                                 type="email"
                                 autoComplete="email"
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                                placeholder="Email address"
                                 {...register("email", { required: true })}
+                                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                                placeholder="Email address"
                             />
                             {errors.email && <span className="text-red-500 text-xs">Email is required</span>}
                         </div>
                         <div>
-                            <label htmlFor="password" className="sr-only">Password</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                             <div className="relative">
                                 <input
                                     id="password"
+                                    name="password"
                                     type={showPassword ? "text" : "password"}
                                     autoComplete="current-password"
-                                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm pr-10"
-                                    placeholder="Password"
                                     {...register("password", { required: true })}
+                                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm pr-10"
+                                    placeholder="Password"
                                 />
                                 <button
                                     type="button"
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center z-20"
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center z-10"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
                                     {showPassword ? (
@@ -112,7 +117,7 @@ export default function Login() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                         >
                             Sign in
                         </button>

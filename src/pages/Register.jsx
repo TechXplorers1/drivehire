@@ -13,15 +13,16 @@ export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    useEffect(() => {
-        // Wait for userRole to be defined before redirecting
-        if (!authLoading && user && !loading && userRole) {
-            if (userRole === 'driver') navigate('/driver');
-            else if (userRole === 'admin') navigate('/admin');
-            else if (userRole === 'instructor') navigate('/instructor');
-            else navigate('/'); // New users or customers typically go to home or onboarding
-        }
-    }, [user, userRole, authLoading, navigate, loading]);
+   useEffect(() => {
+  if (authLoading) return;
+  if (!user || !userRole) return;
+
+  if (userRole === "driver") navigate("/driver");
+  else if (userRole === "admin") navigate("/admin");
+  else if (userRole === "instructor") navigate("/instructor");
+  else navigate("/");
+}, [user, userRole, authLoading]);
+
 
     const onSubmit = async (data) => {
         if (data.password !== data.confirmPassword) {

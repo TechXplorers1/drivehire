@@ -1,139 +1,193 @@
-import { createContext, useContext, useEffect, useState, useRef } from "react";
-import {
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    signOut,
-    signInWithPopup,
-    setPersistence,
-    browserLocalPersistence,
-} from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { auth, db, googleProvider } from "../lib/firebase";
+import { createContext, useContext, useEffect, useState } from "react";
+// import {
+//   onAuthStateChanged,
+//   signInWithEmailAndPassword,
+//   createUserWithEmailAndPassword,
+//   signOut,
+//   signInWithPopup,
+//   setPersistence,
+//   browserLocalPersistence,
+// } from "firebase/auth";
+// import { doc, getDoc, setDoc } from "firebase/firestore";
+// import { auth, db, googleProvider } from "../lib/firebase";
 
 const AuthContext = createContext({});
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    // OPTIMISTIC INIT: Load from localStorage if available
-    const [user, setUser] = useState(() => {
-        try {
-            const saved = localStorage.getItem('drivehire_user');
-            return saved ? JSON.parse(saved) : null;
-        } catch { return null; }
-    });
+  const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    const [userRole, setUserRole] = useState(() => {
-        try {
-            const saved = localStorage.getItem('drivehire_role');
-            return saved ? JSON.parse(saved) : null;
-        } catch { return 'customer'; }
-    });
+  // MOCK: Load from local storage to simulate persistence
+  useEffect(() => {
+    const storedUser = localStorage.getItem('drivehire_mock_user');
+    const storedRole = localStorage.getItem('drivehire_mock_role');
 
-    // If we have a cached user, we are NOT loading (conceptually)
-    const [loading, setLoading] = useState(() => !localStorage.getItem('drivehire_user'));
-    const registeringRole = useRef(null);
+    if (storedUser && storedRole) {
+      setUser(JSON.parse(storedUser));
+      setUserRole(storedRole);
+    }
+    setLoading(false);
+  }, []);
 
-    // Sync state to localStorage
-    useEffect(() => {
-        if (user) localStorage.setItem('drivehire_user', JSON.stringify(user));
-        else localStorage.removeItem('drivehire_user');
-    }, [user]);
+  /* 
+  // ORIGINAL FIREBASE LOGIC
+  useEffect(() => {
+    setPersistence(auth, browserLocalPersistence);
 
-    useEffect(() => {
-        if (userRole) localStorage.setItem('drivehire_role', JSON.stringify(userRole));
-        else localStorage.removeItem('drivehire_role');
-    }, [userRole]);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        setUser(null);
+        setUserRole(null);
+        setLoading(false);
+        return;
+      }
 
-    useEffect(() => {
-        setPersistence(auth, browserLocalPersistence);
+      setLoading(true);
 
-        const unsub = onAuthStateChanged(auth, async (currentUser) => {
-            if (!currentUser) {
-                setUser(null);
-                setUserRole(null);
-                setLoading(false);
-                return;
-            }
-
-            try {
-                const snap = await getDoc(doc(db, "users", currentUser.uid));
-
-                if (snap.exists()) {
-                    const data = snap.data();
-                    console.log("AuthContext: Firestore data loaded", data);
-                    setUser({
-                        uid: currentUser.uid,
-                        email: currentUser.email,
-                        displayName: currentUser.displayName,
-                        ...data,
-                    });
-                    setUserRole(data.role);
-                } else {
-                    console.warn("AuthContext: User doc missing in Firestore. Existing role:", userRole);
-                    setUser(currentUser);
-                    // Use the registering role if available, or try to keep existing role if we have one cached
-                    // Only default to customer if we truly have nothing
-                    setUserRole(prev => registeringRole.current || prev || "customer");
-                    if (registeringRole.current) console.log("AuthContext: Using pending role", registeringRole.current);
-                }
-            } catch (err) {
-                console.error("AuthContext: Error fetching user doc", err);
-                setUser(currentUser);
-                // Keep existing role on error instead of forcing customer
-                setUserRole(prev => registeringRole.current || prev || "customer");
-            }
-
-            setLoading(false);
-        });
-
-        return () => unsub();
-    }, []);
-
-    const login = (email, password) =>
-        signInWithEmailAndPassword(auth, email, password);
-
-    const register = async (email, password, role, extra = {}) => {
-        registeringRole.current = role;
-        const res = await createUserWithEmailAndPassword(auth, email, password);
-        const userData = {
-            email,
-            role,
-            createdAt: new Date(),
-            ...extra,
-        };
-        await setDoc(doc(db, "users", res.user.uid), userData);
-
-        // Manual state update to prevent race condition with onAuthStateChanged
-        setUser({
-            uid: res.user.uid,
-            email: res.user.email,
-            displayName: extra.fullName,
-            ...userData
-        });
-        setUserRole(role);
-    };
-
-    const loginWithGoogle = async (role = "customer") => {
-        const res = await signInWithPopup(auth, googleProvider);
-        const ref = doc(db, "users", res.user.uid);
+      try {
+        const ref = doc(db, "users", currentUser.uid);
         const snap = await getDoc(ref);
+
         if (!snap.exists()) {
-            await setDoc(ref, {
-                email: res.user.email,
-                role,
-                createdAt: new Date(),
-            });
+          // Safety fallback – SHOULD NOT happen normally
+          await setDoc(ref, {
+            email: currentUser.email,
+            role: "customer",
+            createdAt: new Date(),
+          });
+          setUserRole("customer");
+        } else {
+          setUserRole(snap.data().role);
         }
-    };
 
-    const logout = () => signOut(auth);
+        setUser({
+          uid: currentUser.uid,
+          email: currentUser.email,
+        });
+      } catch (error) {
+        console.error("Auth error:", error);
+      } finally {
+        setLoading(false);
+      }
+    });
 
-    return (
-        <AuthContext.Provider
-            value={{ user, userRole, loading, login, register, loginWithGoogle, logout }}
-        >
-            {children}
-        </AuthContext.Provider>
-    );
+    return () => unsubscribe();
+  }, []);
+  */
+
+  // MOCK LOGIN
+  const login = async (email, password) => {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    if (password !== "12345@Tx") {
+      throw new Error("Invalid password (Mock: Use '12345@Tx')");
+    }
+
+    let role = "customer";
+    let uid = "mock-user-1";
+
+    if (email === "user@gmail.com") {
+      role = "customer";
+      uid = "mock-user-123";
+    } else if (email === "driver@gmail.com") {
+      role = "driver";
+      uid = "mock-driver-456";
+    } else {
+      throw new Error("User not found (Mock: Use 'user@gmail.com' or 'driver@gmail.com')");
+    }
+
+    const mockUser = { uid, email };
+
+    setUser(mockUser);
+    setUserRole(role);
+
+    // Persist
+    localStorage.setItem('drivehire_mock_user', JSON.stringify(mockUser));
+    localStorage.setItem('drivehire_mock_role', role);
+  };
+
+  /*
+  const login = (email, password) =>
+    signInWithEmailAndPassword(auth, email, password);
+  */
+
+  // MOCK REGISTER
+  const register = async (email, password, role, extra = {}) => {
+    throw new Error("Registration disabled in Mock Mode. Please use 'user@gmail.com' or 'driver@gmail.com' to login.");
+  };
+
+  /*
+  const register = async (email, password, role, extra = {}) => {
+    const res = await createUserWithEmailAndPassword(auth, email, password);
+
+    await setDoc(doc(db, "users", res.user.uid), {
+      email,
+      role,
+      createdAt: new Date(),
+      ...extra,
+    });
+
+    return res;
+  };
+  */
+
+  // MOCK GOOGLE LOGIN
+  const loginWithGoogle = async (role = "customer") => {
+    // Treat as standard customer login
+    await login("user@gmail.com", "12345@Tx");
+  };
+
+  /*
+  const loginWithGoogle = async (role = "customer") => {
+    const res = await signInWithPopup(auth, googleProvider);
+    const ref = doc(db, "users", res.user.uid);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        email: res.user.email,
+        role,
+        createdAt: new Date(),
+      });
+    }
+
+    return res;
+  };
+  */
+
+  // MOCK LOGOUT
+  const logout = async () => {
+    setUser(null);
+    setUserRole(null);
+    localStorage.removeItem('drivehire_mock_user');
+    localStorage.removeItem('drivehire_mock_role');
+  };
+
+  /*
+  const logout = async () => {
+    await signOut(auth);
+    setUser(null);
+    setUserRole(null);
+  };
+  */
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        userRole,
+        loading,
+        login,
+        register,
+        loginWithGoogle,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+
 };
