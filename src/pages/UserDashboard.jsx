@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getUserBookings } from '../lib/db';
+// import { getUserBookings } from '../lib/db';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { Calendar, Clock, MapPin, Tag, Car, Settings, User } from 'lucide-react';
 import LoadingScreen from '../components/LoadingScreen';
@@ -28,16 +28,36 @@ export default function UserDashboard() {
         }
     }, [user]);
 
+    // Mock Data Loading
     useEffect(() => {
-        async function load() {
-            if (user) {
-                const data = await getUserBookings(user.uid);
-                setBookings(data.sort((a, b) => b.createdAt - a.createdAt));
-                setLoading(false);
+        setLoading(false);
+        setBookings([
+            {
+                id: 'mock1',
+                paymentStatus: 'paid',
+                date: 'Dec 28, 2024',
+                time: '2:30 PM',
+                serviceType: 'chauffeur',
+                driverName: 'James Wilson',
+                duration: '4',
+                totalPrice: '320',
+                notes: 'Airport pick up, flight AA123',
+                createdAt: 2
+            },
+            {
+                id: 'mock2',
+                paymentStatus: 'pending',
+                date: 'Jan 05, 2025',
+                time: '10:00 AM',
+                serviceType: 'chauffeur',
+                driverName: 'Pending Assignment',
+                duration: '2',
+                totalPrice: '180',
+                notes: 'City tour',
+                createdAt: 1
             }
-        }
-        load();
-    }, [user]);
+        ]);
+    }, []);
 
     return (
         <DashboardLayout role="user">
