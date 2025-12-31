@@ -12,6 +12,7 @@ import Fleet from './pages/Fleet';
 import Business from './pages/Business';
 import Services from './pages/Services';
 import ServiceDetail from './pages/ServiceDetail';
+import RideDetails from './pages/RideDetails';
 import DriverDashboard from './pages/DriverDashboard';
 
 import DrivingSchool from './pages/DrivingSchool';
@@ -54,6 +55,14 @@ function App() {
           element={
             <ProtectedRoute>
               <UserDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/account/ride/:id"
+          element={
+            <ProtectedRoute>
+              <RideDetails />
             </ProtectedRoute>
           }
         />

@@ -101,11 +101,17 @@ export default function UserDashboard() {
                                             {booking.notes && <p className="text-sm text-gray-500 mt-3 italic bg-gray-50 p-2 inline-block">"{booking.notes}"</p>}
                                         </div>
                                         <div className="flex items-center gap-4 self-end md:self-center">
-                                            <button className="px-6 py-3 text-xs font-bold tracking-widest uppercase border border-gray-200 hover:border-black hover:bg-black hover:text-white transition-all duration-300">
+                                            <button
+                                                onClick={() => window.location.href = `/account/ride/${booking.id}`}
+                                                className="px-6 py-3 text-xs font-bold tracking-widest uppercase border border-gray-200 hover:border-black hover:bg-black hover:text-white transition-all duration-300"
+                                            >
                                                 Details
                                             </button>
                                             {booking.paymentStatus !== 'paid' && (
-                                                <button className="px-6 py-3 text-xs font-bold tracking-widest uppercase bg-black text-white hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-xl">
+                                                <button
+                                                    onClick={() => window.location.href = `/account/ride/${booking.id}`}
+                                                    className="px-6 py-3 text-xs font-bold tracking-widest uppercase bg-black text-white hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-xl"
+                                                >
                                                     Pay Now
                                                 </button>
                                             )}
